@@ -26,7 +26,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   transition:opacity .2s;
   background:radial-gradient(ellipse at center,transparent 20%,rgba(255,30,50,.55) 100%)}
 
-/* HUD */
 #hud{position:fixed;top:0;left:0;right:0;height:62px;z-index:8;
   display:flex;align-items:center;justify-content:space-between;padding:0 14px;
   pointer-events:none;background:linear-gradient(180deg,rgba(4,6,14,.9),rgba(4,6,14,0))}
@@ -58,7 +57,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   opacity:.65;transition:opacity .2s}
 #pauseBtn:active{opacity:1;transform:scale(.94)}
 
-/* Overlays */
 .overlay{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
   align-items:center;justify-content:center;padding:22px;text-align:center;
   background:rgba(2,4,10,.93);backdrop-filter:blur(9px)}
@@ -77,7 +75,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .hint{font-size:11px;line-height:2.1;color:var(--dim);letter-spacing:1px;
   margin-top:16px;max-width:440px}
 
-/* Mode selector */
 #modeGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
   width:100%;max-width:420px;margin-top:16px}
 .mode-btn{padding:11px 10px;border-radius:10px;font-size:12px;font-weight:bold;
@@ -93,7 +90,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #lcStats,#finalStats{font-size:14px;line-height:2;color:var(--txt);margin-bottom:4px}
 #lcStats b,#finalStats b{color:var(--gold);font-size:18px}
 
-/* Leaderboard */
 #leaderboard{margin-top:14px;width:100%;max-width:420px;
   background:rgba(13,19,34,.7);border:1px solid rgba(0,200,255,.25);
   border-radius:10px;padding:10px 14px;font-size:12px;color:var(--dim)}
@@ -136,7 +132,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div id="banner"></div>
 <button id="pauseBtn">❚❚</button>
 
-<!-- Menu -->
 <div class="overlay show" id="menu">
   <h1>B</h1>
   <div class="sub">NEON BREAKER</div>
@@ -154,20 +149,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     كل 5 مستويات زعيم — التقط الرموز للمساعدة</div>
 </div>
 
-<!-- Level clear -->
 <div class="overlay" id="levelclear">
   <h2>المستوى مكتمل</h2>
   <div id="lcStats"></div>
   <button class="bigbtn" id="nextBtn">التالي</button>
 </div>
 
-<!-- Paused -->
 <div class="overlay" id="paused">
   <h2>إيقاف مؤقت</h2>
   <button class="bigbtn alt" id="resumeBtn">متابعة</button>
 </div>
 
-<!-- Game over -->
 <div class="overlay" id="gameover">
   <h2>انتهت اللعبة</h2>
   <div id="finalStats"></div>
@@ -180,11 +172,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 "use strict";
 /* =========================================================
    B — NEON BREAKER 2
-   Features: localStorage best+leaderboard, boss every 5,
-   challenge modes, handcrafted level maps
+   Speed mode: paddle starts HUGE, shrinks gradually.
+   Bricks: bigger overall.
    ========================================================= */
 
-/* ---------------- helpers ---------------- */
 const TAU = Math.PI * 2;
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const rand  = (a,b) => a + Math.random()*(b-a);
@@ -196,12 +187,11 @@ const hexA  = (hex,a) => {
   return `rgba(${r},${g},${b},${a})`;
 };
 
-/* ---------------- canvas ---------------- */
 const cv  = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 let W = window.innerWidth, H = window.innerHeight, DPR = 1;
 
-/* ---------------- audio ---------------- */
+/* ---- audio ---- */
 let AC = null;
 function initAudio() {
   if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){ AC=null; } }
@@ -220,7 +210,7 @@ function beep(freq, dur, type, vol, to) {
   o.start(t); o.stop(t+dur+0.03);
 }
 
-/* ---------------- dom ---------------- */
+/* ---- dom ---- */
 const scoreEl  = document.getElementById('scoreEl');
 const levelEl  = document.getElementById('levelEl');
 const livesEl  = document.getElementById('livesEl');
@@ -243,7 +233,6 @@ const OV = {
 function hideAll(){ for (const k in OV) OV[k].classList.remove('show'); }
 function showOv(n){ hideAll(); OV[n].classList.add('show'); }
 
-/* ---------------- constants ---------------- */
 const PALETTE   = ['#00c8ff','#3d7bff','#8b5cff','#ff3d9a','#ffb020','#00ff88'];
 const DROP_TYPES = [
   { t:'wide',  c:'#00ff88', s:'⇔' },
@@ -263,9 +252,8 @@ const MODES = {
   endless: { name:'لا نهائي',  lives:3, timed:false, oneBall:false, speed:false, endless:true,  boss:true  }
 };
 
-/* ---------------- handcrafted maps ---------------- */
+/* ---- handcrafted maps ---- */
 const LEVEL_MAPS = [
-  // 1: B letter
   [ "11111...",
     "1....1..",
     "1....1..",
@@ -273,14 +261,12 @@ const LEVEL_MAPS = [
     "1....1..",
     "1....1..",
     "11111..." ],
-  // 2: Heart
   [ ".11..11.",
     "11111111",
     "11111111",
     ".111111.",
     "..1111..",
     "...11..." ],
-  // 3: Star
   [ "...11...",
     "..1111..",
     "11111111",
@@ -288,7 +274,6 @@ const LEVEL_MAPS = [
     "..1111..",
     ".11..11.",
     "11....11" ],
-  // 4: Diamond
   [ "...11...",
     "..1111..",
     ".111111.",
@@ -296,7 +281,6 @@ const LEVEL_MAPS = [
     ".111111.",
     "..1111..",
     "...11..." ],
-  // 5: Arrow up
   [ "...11...",
     "..1111..",
     ".111111.",
@@ -304,7 +288,6 @@ const LEVEL_MAPS = [
     "..1111..",
     "..1111..",
     "..1111.." ],
-  // 6: Smiley
   [ "..1111..",
     ".111111.",
     "11.11.11",
@@ -312,7 +295,6 @@ const LEVEL_MAPS = [
     "11....11",
     ".111111.",
     "..1111.." ],
-  // 7: Ship
   [ "...11...",
     "..1111..",
     ".111111.",
@@ -320,7 +302,6 @@ const LEVEL_MAPS = [
     "11111111",
     ".1.11.1.",
     "1.1..1.1" ],
-  // 8: Plus
   [ "...11...",
     "...11...",
     "11111111",
@@ -329,7 +310,7 @@ const LEVEL_MAPS = [
     "...11..." ]
 ];
 
-/* ---------------- storage ---------------- */
+/* ---- storage ---- */
 const SAVE_KEY   = 'b_neon_best_v1';
 const SCORES_KEY = 'b_neon_scores_v1';
 function loadBest() {
@@ -373,7 +354,7 @@ function updateMenuBest() {
   menuBest.textContent = b > 0 ? '★ أفضل نتيجة: ' + b : '';
 }
 
-/* ---------------- state ---------------- */
+/* ---- state ---- */
 const G = {
   state: 'menu',
   mode: 'normal',
@@ -394,7 +375,7 @@ const G = {
 G.paddle.baseW = clamp(window.innerWidth * 0.18, 76, 140);
 G.paddle.w = G.paddle.baseW;
 
-/* ---------------- resize ---------------- */
+/* ---- resize ---- */
 function resize() {
   DPR = Math.min(window.devicePixelRatio||1, 2);
   W = window.innerWidth; H = window.innerHeight;
@@ -420,7 +401,7 @@ function makeStars() {
   }
 }
 
-/* ---------------- input ---------------- */
+/* ---- input ---- */
 const keys = {};
 window.addEventListener('keydown', e => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
@@ -444,7 +425,6 @@ cv.addEventListener('touchmove', e => {
   G.pointerX = e.changedTouches[0].clientX;
 }, { passive: false });
 
-/* ---------------- mode selection ---------------- */
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -453,11 +433,10 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
   });
 });
 
-/* ---------------- HUD ---------------- */
+/* ---- HUD ---- */
 function updateHUD() {
   scoreEl.textContent = G.score;
   levelEl.textContent = G.level;
-
   if (MODES[G.mode].timed) {
     leftLbl.textContent = 'المرحلة';
     rightLbl.textContent = '⏱ الوقت';
@@ -494,7 +473,7 @@ function redFlash() {
   setTimeout(() => flashEl.style.opacity = '0', 100);
 }
 
-/* ---------------- ball factory ---------------- */
+/* ---- ball factory ---- */
 function makeBall(x, y, speed, stuck) {
   return {
     x, y, vx: 0, vy: 0,
@@ -507,7 +486,6 @@ function ballSpeed(b) {
 }
 function ballRadius() { return BASE_R * (G.bigT > 0 ? 1.65 : 1); }
 
-/* ---------------- brick helpers ---------------- */
 function brickRect(b) {
   const gap = 5;
   const w = (W - G.pad*2) / G.cols;
@@ -519,7 +497,7 @@ function brickRect(b) {
   };
 }
 
-/* ---------------- level building ---------------- */
+/* ---- level building ---- */
 function buildFromMap(map, level) {
   G.bricks = []; G.boss = null; G.balls = []; G.drops = [];
   G.combo = 0; updateCombo();
@@ -531,7 +509,8 @@ function buildFromMap(map, level) {
   G.cols = cols;
   const areaW = W - G.pad*2;
   const cw = areaW / cols;
-  G.cellH = clamp(cw * 0.42, 17, 28);
+  /* BIGGER bricks */
+  G.cellH = clamp(cw * 0.62, 24, 40);
 
   for (let gy=0; gy<rows; gy++) {
     const row = map[gy];
@@ -560,9 +539,11 @@ function buildProcedural(level) {
   G.wideT = 0; G.slowT = 0; G.bigT = 0;
   G.pad = 14; G.top = 62;
   const areaW = W - G.pad*2;
-  G.cols = clamp(Math.round(areaW/78), 6, 11);
+  /* fewer columns → wider bricks */
+  G.cols = clamp(Math.round(areaW/95), 6, 10);
   const cw = areaW / G.cols;
-  G.cellH = clamp(cw*0.42, 17, 28);
+  /* BIGGER bricks */
+  G.cellH = clamp(cw * 0.62, 24, 40);
   const rows  = clamp(3 + Math.ceil(level/2), 3, 7);
   const tough = clamp(1 + Math.floor((level-1)/2), 1, 3);
 
@@ -589,9 +570,9 @@ function buildLevel(level) {
 
 function buildEndlessWave() {
   const areaW = W - G.pad*2;
-  G.cols = clamp(Math.round(areaW/78), 6, 11);
+  G.cols = clamp(Math.round(areaW/95), 6, 10);
   const cw = areaW / G.cols;
-  G.cellH = clamp(cw*0.42, 17, 28);
+  G.cellH = clamp(cw * 0.62, 24, 40);
   const rows  = clamp(3 + Math.ceil(G.level/2), 3, 7);
   const tough = clamp(1 + Math.floor((G.level-1)/2), 1, 3);
   for (let gy=0; gy<rows; gy++) {
@@ -605,10 +586,10 @@ function buildEndlessWave() {
   }
 }
 
-/* ---------------- boss ---------------- */
+/* ---- boss ---- */
 function spawnBoss() {
   const w = Math.min(W*0.5, 280);
-  const h = 38;
+  const h = 40;
   const hp = 28 + G.level * 4;
   G.boss = {
     x: (W - w) / 2,
@@ -621,7 +602,6 @@ function spawnBoss() {
   };
   banner('⚠ زعيم!');
 }
-
 function updateBoss(dt) {
   if (!G.boss) return;
   const b = G.boss;
@@ -630,7 +610,6 @@ function updateBoss(dt) {
   if (b.x + b.w > W - G.pad) { b.x = W - G.pad - b.w; b.dir = -1; }
   if (b.flash > 0) b.flash = Math.max(0, b.flash - dt*4);
 }
-
 function collideBoss(b, r) {
   if (!G.boss) return false;
   const bs = G.boss;
@@ -638,7 +617,6 @@ function collideBoss(b, r) {
   const cy = clamp(b.y, bs.y, bs.y+bs.h);
   const dx = b.x - cx, dy = b.y - cy;
   if (dx*dx + dy*dy > r*r) return false;
-
   if (dx*dx + dy*dy > 0.0001) {
     const d = Math.hypot(dx,dy);
     const nx = dx/d, ny = dy/d;
@@ -655,7 +633,6 @@ function collideBoss(b, r) {
   hitBoss();
   return true;
 }
-
 function hitBoss() {
   const bs = G.boss;
   bs.hp--;
@@ -663,7 +640,6 @@ function hitBoss() {
   G.shake = Math.max(G.shake, 6);
   burst(bs.x + bs.w/2, bs.y + bs.h/2, '#ff2d55', 8, 220, 3);
   beep(160 + Math.random()*80, 0.08, 'square', 0.05, 90);
-
   if (bs.hp <= 0) {
     const bonus = 500 + G.level * 100;
     G.score += bonus;
@@ -678,7 +654,7 @@ function hitBoss() {
   }
 }
 
-/* ---------------- effects ---------------- */
+/* ---- effects ---- */
 function burst(x, y, color, count, spd, size) {
   for (let i=0;i<count;i++) {
     const a = rand(0,TAU);
@@ -695,7 +671,14 @@ function floatText(x, y, txt, color) {
   G.texts.push({ x, y, txt, color, life: 0.85, max: 0.85 });
 }
 
-/* ---------------- paddle ---------------- */
+/* ---- paddle (speed mode: starts HUGE, shrinks) ---- */
+function speedPaddleMultiplier() {
+  /* speedMul: 1 → grows 0.04/s (≈2.2 after 30s)
+     map to width: 3.0× at start → 0.55× at ~35s */
+  const m = 3.0 - (G.speedMul - 1) * 2.0;
+  return clamp(m, 0.55, 3.0);
+}
+
 function updatePaddle(dt) {
   const p = G.paddle;
   let moved = false;
@@ -706,15 +689,17 @@ function updatePaddle(dt) {
   }
 
   let desiredW = p.baseW;
-  if (G.wideT > 0) desiredW *= 1.6;
-  if (G.mode === 'speed') desiredW *= Math.max(0.5, 1 - G.speedMul*0.15);
+  if (G.mode === 'speed') desiredW *= speedPaddleMultiplier();
+  if (G.wideT > 0) desiredW *= 1.5;
+
+  /* clamp to screen so it never looks broken */
+  desiredW = Math.min(desiredW, W * 0.9);
 
   p.w += (desiredW - p.w) * Math.min(1, dt*10);
-  p.w = Math.min(p.w, W*0.6);
   p.x = clamp(p.x, p.w/2, W - p.w/2);
 }
 
-/* ---------------- collisions ---------------- */
+/* ---- collisions ---- */
 function collidePaddle(b, r) {
   const p = G.paddle;
   if (b.vy <= 0) return;
@@ -733,7 +718,6 @@ function collidePaddle(b, r) {
     const n = Math.hypot(b.vx, b.vy) || 1;
     b.vx = b.vx/n*sp; b.vy = b.vy/n*sp;
   }
-
   G.combo = 0; updateCombo();
   beep(300, 0.06, 'square', 0.035, 430);
   burst(b.x, topY, '#00c8ff', 5, 130, 2);
@@ -745,7 +729,6 @@ function hitBrick(br, rect) {
   const cx = rect.x + rect.w/2;
   const cy = rect.y + rect.h/2;
   const col = PALETTE[br.gy % PALETTE.length];
-
   if (br.hp <= 0) {
     br.alive = false;
     G.combo++;
@@ -773,7 +756,6 @@ function collideBricks(b, r) {
     const cy = clamp(b.y, rect.y, rect.y+rect.h);
     const dx = b.x - cx, dy = b.y - cy;
     if (dx*dx + dy*dy > r*r) continue;
-
     if (dx*dx + dy*dy > 0.0001) {
       const d = Math.hypot(dx,dy);
       const nx = dx/d, ny = dy/d;
@@ -797,7 +779,6 @@ function collideBricks(b, r) {
   }
 }
 
-/* ---------------- balls update ---------------- */
 function updateBalls(dt) {
   const r = ballRadius();
   for (let i = G.balls.length - 1; i >= 0; i--) {
@@ -820,12 +801,10 @@ function updateBalls(dt) {
       if (b.x - r < 0)  { b.x = r;      b.vx =  Math.abs(b.vx); }
       if (b.x + r > W)  { b.x = W - r;  b.vx = -Math.abs(b.vx); }
       if (b.y - r < G.top) { b.y = G.top + r; b.vy = Math.abs(b.vy); }
-
       collidePaddle(b, r);
       if (!(G.boss && collideBoss(b, r))) collideBricks(b, r);
       if (G.state !== 'playing') return;
     }
-
     b.trail.push({ x: b.x, y: b.y });
     if (b.trail.length > 9) b.trail.shift();
     if (b.y - r > H + 40) G.balls.splice(i, 1);
@@ -833,12 +812,11 @@ function updateBalls(dt) {
   if (G.balls.length === 0) loseLife();
 }
 
-/* ---------------- drops ---------------- */
+/* ---- drops ---- */
 function spawnDrop(x, y) {
   const r = Math.random();
   let idx;
   if (G.mode === 'oneball') {
-    // no multi, no life in oneball mode
     if (r < 0.30) idx = 0;
     else if (r < 0.55) idx = 2;
     else if (r < 0.75) idx = 3;
@@ -922,7 +900,6 @@ function addBalls() {
   launchBalls();
 }
 
-/* ---------------- launching ---------------- */
 function launchBalls() {
   if (G.state !== 'playing') return;
   let any = false;
@@ -939,9 +916,8 @@ function launchBalls() {
   if (any) beep(520, 0.09, 'square', 0.045, 820);
 }
 
-/* ---------------- life / transitions ---------------- */
+/* ---- transitions ---- */
 function loseLife() {
-  // timed mode: penalty
   if (MODES[G.mode].timed) {
     G.timer = Math.max(0, G.timer - 5);
     G.combo = 0; updateCombo();
@@ -954,13 +930,11 @@ function loseLife() {
     updateHUD();
     return;
   }
-  // oneball: game over
   if (MODES[G.mode].oneBall) {
     G.lives = 0;
     gameOver();
     return;
   }
-  // normal / speed / endless
   G.lives--;
   G.combo = 0; updateCombo();
   G.shake = 16;
@@ -1000,7 +974,7 @@ function gameOver() {
   beep(300, 0.5, 'sawtooth', 0.07, 80);
 }
 
-/* ---------------- start / restart ---------------- */
+/* ---- start / restart ---- */
 function startGame(mode) {
   initAudio();
   G.mode = mode;
@@ -1015,7 +989,12 @@ function startGame(mode) {
   G.pointerX = null;
   G.paddle.x = W/2;
   G.paddle.baseW = clamp(W*0.18, 76, 140);
-  G.paddle.w = G.paddle.baseW;
+  /* In speed mode, instant huge paddle */
+  if (mode === 'speed') {
+    G.paddle.w = Math.min(G.paddle.baseW * 3.0, W * 0.9);
+  } else {
+    G.paddle.w = G.paddle.baseW;
+  }
 
   buildLevel(1);
   updateHUD();
@@ -1027,7 +1006,12 @@ function startGame(mode) {
 function nextLevel() {
   G.level++;
   G.paddle.baseW = clamp(W*0.18, 76, 140);
-  G.paddle.w = G.paddle.baseW;
+  if (G.mode === 'speed') {
+    /* keep current size shrunk by progress, don't reset huge */
+    G.paddle.w = Math.min(G.paddle.w, G.paddle.baseW * 3.0);
+  } else {
+    G.paddle.w = G.paddle.baseW;
+  }
   buildLevel(G.level);
   G.state = 'playing';
   hideAll();
@@ -1039,7 +1023,6 @@ function togglePause() {
   else if (G.state === 'paused') { G.state = 'playing'; hideAll(); }
 }
 
-/* ---------------- buttons ---------------- */
 document.getElementById('startBtn').addEventListener('click', () => startGame(G.mode));
 document.getElementById('retryBtn').addEventListener('click', () => startGame(G.mode));
 document.getElementById('nextBtn').addEventListener('click', nextLevel);
@@ -1051,7 +1034,7 @@ document.getElementById('menuBtn').addEventListener('click', () => {
   showOv('menu');
 });
 
-/* ---------------- update ---------------- */
+/* ---- update ---- */
 function update(dt) {
   G.time += dt;
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt*42);
@@ -1081,6 +1064,7 @@ function update(dt) {
   if (G.slowT > 0) G.slowT -= dt;
   if (G.bigT  > 0) G.bigT  -= dt;
 
+  /* speed mode: progressive acceleration */
   if (G.mode === 'speed') G.speedMul += dt * 0.04;
 
   if (MODES[G.mode].timed) {
@@ -1117,7 +1101,7 @@ function update(dt) {
   }
 }
 
-/* ---------------- drawing ---------------- */
+/* ---- drawing ---- */
 function rr(x, y, w, h, r) {
   const rad = Math.min(r, w/2, h/2);
   ctx.beginPath();
@@ -1136,23 +1120,23 @@ function drawBricks() {
     const col = PALETTE[br.gy % PALETTE.length];
     ctx.globalAlpha = 0.16 + 0.12*br.flash;
     ctx.fillStyle = col;
-    rr(r.x-2, r.y-2, r.w+4, r.h+4, 7); ctx.fill();
+    rr(r.x-2, r.y-2, r.w+4, r.h+4, 8); ctx.fill();
     ctx.globalAlpha = 1;
     const g = ctx.createLinearGradient(r.x, r.y, r.x, r.y+r.h);
     g.addColorStop(0, hexA(col, 0.62));
     g.addColorStop(1, hexA(col, 0.20));
     ctx.fillStyle = g;
-    rr(r.x, r.y, r.w, r.h, 5); ctx.fill();
+    rr(r.x, r.y, r.w, r.h, 6); ctx.fill();
     ctx.strokeStyle = hexA(col, 0.95);
-    ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.lineWidth = 1.6; ctx.stroke();
     if (br.hp > 1) {
       ctx.strokeStyle = 'rgba(255,255,255,' + (0.25 + 0.18*br.hp) + ')';
-      ctx.lineWidth = 1;
-      rr(r.x+3, r.y+3, r.w-6, r.h-6, 3); ctx.stroke();
+      ctx.lineWidth = 1.2;
+      rr(r.x+4, r.y+4, r.w-8, r.h-8, 4); ctx.stroke();
     }
     if (br.flash > 0) {
       ctx.fillStyle = 'rgba(255,255,255,' + (br.flash*0.55) + ')';
-      rr(r.x, r.y, r.w, r.h, 5); ctx.fill();
+      rr(r.x, r.y, r.w, r.h, 6); ctx.fill();
     }
   }
 }
@@ -1160,7 +1144,6 @@ function drawBricks() {
 function drawBoss() {
   if (!G.boss) return;
   const bs = G.boss;
-  // HP bar
   const barW = Math.min(W*0.6, 360);
   const barH = 8;
   const barX = (W - barW) / 2;
@@ -1177,7 +1160,6 @@ function drawBoss() {
   ctx.lineWidth = 1;
   rr(barX, barY, barW, barH, 4); ctx.stroke();
 
-  // body
   ctx.save();
   ctx.shadowColor = '#ff2d55';
   ctx.shadowBlur = 24;
@@ -1191,14 +1173,11 @@ function drawBoss() {
   ctx.strokeStyle = 'rgba(255,255,255,.65)';
   ctx.lineWidth = 2;
   rr(bs.x, bs.y, bs.w, bs.h, 10); ctx.stroke();
-
-  // eyes
   ctx.fillStyle = '#fff';
   ctx.beginPath();
   ctx.arc(bs.x + bs.w*0.35, bs.y + bs.h*0.45, 4, 0, TAU);
   ctx.arc(bs.x + bs.w*0.65, bs.y + bs.h*0.45, 4, 0, TAU);
   ctx.fill();
-
   if (bs.flash > 0) {
     ctx.fillStyle = 'rgba(255,255,255,' + (bs.flash*0.6) + ')';
     rr(bs.x, bs.y, bs.w, bs.h, 10); ctx.fill();
@@ -1331,7 +1310,7 @@ function render() {
   ctx.restore();
 }
 
-/* ---------------- main loop ---------------- */
+/* ---- loop ---- */
 function loop(ts) {
   requestAnimationFrame(loop);
   if (!G.last) G.last = ts;
@@ -1343,7 +1322,7 @@ function loop(ts) {
   render();
 }
 
-/* ---------------- boot ---------------- */
+/* ---- boot ---- */
 resize();
 makeStars();
 buildLevel(1);
